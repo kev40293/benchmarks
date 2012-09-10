@@ -2,14 +2,30 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <time.h>
+#define GB 1024*1024*1024
 const char* usage = "Usage: diskbench [-b[KMG]] [-rt]";
 struct opts {
 	short read;
 	short threaded;
 	int bsize;
 };
+double diffclock(clock_t e, clock_t b){
+	return (double) (e-b)*1000/CLOCKS_PER_SEC;
+}
+int bench_write(struct opts * op) {
+	clock_t start, end;
+	FILE * file;
+	file = fopen("testfile", "w+b");
+	char* data = (char*) malloc(sizeof(char)*GB);
+	start = clock();
+	fwrite(data, (size_t) op->bsize, GB/op->bsize, file);
+	end = clock();
+	fprintf(stdout, "time: %f\n", diffclock(end,start));
+	fclose(file);
+}
 int main(int argc, char** argv){
-	printf("Testing disk performance\n");
+	printf("testing disk performance\n");
 	int i;
 	struct opts * options = (struct opts*) malloc(sizeof(struct opts));
 	options->read = 0;
@@ -22,12 +38,12 @@ int main(int argc, char** argv){
 				case 'b':
 					s = 1;
 					switch (argv[i][2]){
-						case 'G': s = s << 10;
-						case 'M': s = s << 10;
-						case 'K': s = s << 10;
+						case 'g': s = s << 10;
+						case 'm': s = s << 10;
+						case 'k': s = s << 10;
 							break;
 						default: s = s;
-							fprintf(stderr,"Invalid Block Size\n%s\n", usage);
+							fprintf(stderr,"invalid block size\n%s\n", usage);
 							exit(1);
 					}
 					options->bsize = s;
@@ -43,14 +59,15 @@ int main(int argc, char** argv){
 						options->read |= 1;
 					break;
 				default:
-					fprintf(stderr, "Unrecognized Option\n%s\n", usage);
+					fprintf(stderr, "unrecognized option\n%s\n", usage);
 					exit(1);
 			}
 		}
 	}
-	printf("Block Size: %d B\n%s Mode\nThreaded: %s\n",
+	printf("block size: %d b\n%s mode\nthreaded: %s\n",
 			options->bsize,
-			options->read ? "Read" : "Write",
-			options->threaded ? "Yes" : "No");
+			options->read ? "read" : "write",
+			options->threaded ? "yes" : "no");
+	bench_write(options);
    return 0;
 }
