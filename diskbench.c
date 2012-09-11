@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
+#include "pthread.h"
 #define KB 1024
 #define MB 1024*1024
 #define GB 1024*1024*1024
@@ -15,14 +16,40 @@ struct opts {
 double diffclock(clock_t e, clock_t b){
 	return (double) (e-b)*1000/CLOCKS_PER_SEC;
 }
+struct targs {
+	FILE * f;
+	char * d;
+	int bs;
+};
+void * write_thread(void* argt){
+	#define ARGS ((struct targs*) argt)
+	fwrite (ARGS->d, (size_t) ARGS->bs, GB/2/(ARGS->bs), ARGS->f);
+	pthread_exit(NULL);
+}
 double bench_write(struct opts * op) {
 	clock_t start, end;
 	FILE * file;
 	file = fopen("testfile", "w+b");
 	char* data = (char*) malloc(sizeof(char)*GB);
-	start = clock();
-	fwrite(data, (size_t) op->bsize, GB/op->bsize, file);
-	end = clock();
+	if (op->threaded){
+		pthread_t thread;
+		struct targs thread_args;
+		thread_args.bs = op->bsize;
+		thread_args.f = file;
+		thread_args.d = data + GB/2;
+		void* status;
+		printf("Spawning write thread\n");
+		start=clock();
+		pthread_create(&thread, NULL, &write_thread, (void*) &thread_args);
+		fwrite(data, (size_t) op->bsize, GB/2/op->bsize, file);
+		pthread_join(thread, &status);
+		end = clock();
+	}
+	else {
+		start = clock();
+		fwrite(data, (size_t) op->bsize, GB/op->bsize, file);
+		end = clock();
+	}	
 	fprintf(stdout, "time: %f\n", diffclock(end,start));
 	fclose(file);
 	free(data);
