@@ -5,14 +5,15 @@
 #include "pthread.h"
 #include <sys/time.h>
 #define KB 1024
-#define MB 1024*1024
-#define GB 1024*1024*1024
-#define BENCH GB
+#define MB 1048576
+#define GB 1073741824LL
+//#define BENCH (unsigned int)1024*1024*512*3
+#define BENCH 2*GB
 const char* usage = "Usage: diskbench [-b[KMG]] [-rt]";
 struct opts {
 	short read;
 	short threaded;
-	int bsize;
+	long bsize;
 };
 double getTime_usec() {
    struct timeval tp;
@@ -22,7 +23,7 @@ double getTime_usec() {
 struct targs {
 	FILE * f;
 	char * d;
-	int bs;
+	long bs;
 };
 #define ARGS ((struct targs*) argt)
 void * write_thread(void* argt){
@@ -44,7 +45,7 @@ double bench_write(struct opts * op) {
 		pthread_t thread;
 		struct targs thread_args;
 		thread_args.bs = op->bsize;
-		thread_args.f = file;
+		thread_args.f = fopen("testfile", "w+b");
 		thread_args.d = data + BENCH/2;
 		void* status;
 		printf("Spawning write thread\n");
@@ -59,10 +60,10 @@ double bench_write(struct opts * op) {
 		fwrite(data, (size_t) op->bsize, BENCH/op->bsize, file);
 		end = getTime_usec();
 	}	
-	fprintf(stdout, "time: %f\n", 1000*(end-start));
+	fprintf(stdout, "time: %f\n", (end-start)/1000);
 	fclose(file);
 	free(data);
-	return (end - start) * 1000;
+	return (end - start) / 1000;
 }
 double bench_read(struct opts * op) {
 	double start, end;
@@ -101,7 +102,7 @@ int main(int argc, char** argv){
 	options->read = 0;
 	options->threaded = 0;
 	options->bsize = 1;
-	int s;
+	long s;
 	for (i =1; i < argc; i++){
 		if (argv[i][0] == '-'){
 			switch(argv[i][1]){
@@ -134,13 +135,23 @@ int main(int argc, char** argv){
 			}
 		}
 	}
-	printf("Block size: %d B\n%s mode\nThreaded: %s\n",
+	printf("Block size: %lu B\n%s mode\nThreaded: %s\n",
 			options->bsize,
 			options->read ? "Read" : "Write",
 			options->threaded ? "Yes" : "No");
-	if (options->read)
-		bench_read(options);
-	else
-		bench_write(options);
+        double time;
+        double ratio = BENCH / GB;
+	if (options->read){
+		time = bench_read(options);
+                printf("%s at %f GB/s\n",
+                      "Read",
+                      1000/time*ratio);
+        }
+	else{
+		time = bench_write(options);
+                printf("%s at %f MB/s\n",
+                      "Write",
+                      1000*1024/time*ratio);
+        }
    return 0;
 }

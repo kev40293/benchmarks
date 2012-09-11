@@ -1,0 +1,23 @@
+Usage: ./diskbench -[rt] -b[K,M,G]
+
+Performs disk I/O benchmark to determine read/write speeds
+
+-r      Run read benchmark instead of write
+-t      Run in threaded mode
+-b[KMG] Use a blocksize of K(ilobyte) M(egabyte) G(igabyte)
+
+
+Design:
+        Use the main function to parse arguments and determine action to take
+        either read or write. Then call the desired function.
+
+        The write function generates a large array of 1 GB and writes to an
+        empty file in binary mode. This reduces any need for data
+        initialization. One tradeoff i made was writing from preinitialized
+        memory without looping. This limits the size of the test but provides a more
+        pure measurement.
+
+        The read function reads from /dev/zero to facilitate not having to
+        pregenerate a file for the test. Again the same tradeoff is made where the
+        test is not looped creating more purity for the test but limiting the data
+        size.
