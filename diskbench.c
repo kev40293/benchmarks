@@ -8,7 +8,7 @@
 #define MB 1048576
 #define GB 1073741824LL
 //#define BENCH (unsigned int)1024*1024*512*3
-#define BENCH 2*GB
+#define BENCH GB
 const char* usage = "Usage: diskbench [-b[KMG]] [-rt]";
 struct opts {
 	short read;
@@ -41,6 +41,7 @@ double bench_write(struct opts * op) {
 	FILE * file;
 	file = fopen("testfile", "w+b");
 	char* data = (char*) malloc(sizeof(char)*BENCH);
+	int rc;
 	if (op->threaded){
 		pthread_t thread;
 		struct targs thread_args;
@@ -50,16 +51,20 @@ double bench_write(struct opts * op) {
 		void* status;
 		printf("Spawning write thread\n");
 		start=getTime_usec();
-		pthread_create(&thread, NULL, &write_thread, (void*) &thread_args);
-		fwrite(data, (size_t) op->bsize, BENCH/2/op->bsize, file);
+		rc = pthread_create(&thread, NULL, &write_thread, (void*) &thread_args);
+		rc += fwrite(data, (size_t) op->bsize, BENCH/2/op->bsize, file);
 		pthread_join(thread, &status);
 		end = getTime_usec();
 	}
 	else {
 		start = getTime_usec();
-		fwrite(data, (size_t) op->bsize, BENCH/op->bsize, file);
+		int rc = fwrite(data, (size_t) op->bsize, BENCH/op->bsize, file);
 		end = getTime_usec();
 	}	
+	if (!rc){
+		fprintf(stderr, "Write failure\n");
+		exit(1);
+	}
 	fprintf(stdout, "time: %f\n", (end-start)/1000);
 	fclose(file);
 	free(data);
@@ -71,6 +76,7 @@ double bench_read(struct opts * op) {
 	input = fopen("/dev/zero", "rb");
 	char* data = (char*) malloc(sizeof(char)*BENCH);
 	printf("Reading GB of data\n");
+	int rc;
         if (op->threaded) {
            pthread_t thread;
            struct targs thread_args;
@@ -80,15 +86,19 @@ double bench_read(struct opts * op) {
            void* status;
            printf("Spawning read thread\n");
            start=getTime_usec();
-           pthread_create(&thread, NULL, &read_thread, (void*) &thread_args);
-           fread(data, (size_t) op->bsize, BENCH/2/op->bsize, input);
+           rc = pthread_create(&thread, NULL, &read_thread, (void*) &thread_args);
+           rc +=fread(data, (size_t) op->bsize, BENCH/2/op->bsize, input);
            end=getTime_usec();
         }
         else{
            start = getTime_usec();
-           fread(data, (size_t) op->bsize, BENCH/op->bsize, input);
+           rc = fread(data, (size_t) op->bsize, BENCH/op->bsize, input);
            end = getTime_usec();
         }
+	if (!rc){
+		fprintf(stderr, "Read failur\n");
+		exit(1);
+	}
 	fprintf(stdout, "time: %f\n", (end-start)/1000);
 	fclose(input);
 	free(data);
