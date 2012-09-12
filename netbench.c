@@ -4,6 +4,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <pthread.h>
 #define PORT 10000
 #define ADDRESS "127.0.0.1"
 #define TEST_SIZE 1024LL*1024LL*1024LL
@@ -78,7 +79,27 @@ void run_server(int bsize, int protocol){
    close(sock);
 }
 
-void run_client(int bsize, int protocol){
+struct cargs {
+   int sockfd;
+   char *buff;
+   int bufsize;
+   int num;
+};
+#define TARG ((struct cargs*) thread_args)
+void * client_thread(void *thread_args){
+   int s = TARG->sockfd;
+   char *b = TARG->buff;
+   int bs = TARG->bufsize;
+   int n = TARG->num;
+   for ( ; n > 0; n--){
+      if(write(s, b, bs) < 0){
+         perror ("Thread write failed");
+         exit(1);
+      }
+   }
+   pthread_exit(NULL);
+}
+void run_client(int bsize, int protocol, int twrite){
    int sock;
    struct sockaddr_in serv;
    sock = socket(AF_INET, protocol, 0);
@@ -95,13 +116,27 @@ void run_client(int bsize, int protocol){
    i = TEST_SIZE/bsize;
    printf("Writing data over network\n");
    double start,end;
+   struct cargs threada;
+   pthread_t thread;
+   void * status;
+   if (twrite){
+      threada.bufsize = bsize;
+      i = i >> 1;
+      threada.num = i;
+      threada.sockfd = sock;
+      threada.buff = buffer;
+   }
    start = getTime_usec();
+   if (twrite){
+      pthread_create(&thread, NULL, &client_thread, (void*) &threada);
+   }
    for (; i > 0; i--){
         if (write(sock,buffer, bsize) < 0){
            perror("Failed write\n");
            exit(1);
         }
    }
+   if (twrite) pthread_join(thread, &status);
    end = getTime_usec();
    printf("Write %lld in %f milliseconds\n", TEST_SIZE, (end-start)/1E3);
    printf("Upspeed: %f Gbits/second\n", TEST_SIZE/2E9*8*1E6/(end-start));
@@ -158,7 +193,7 @@ int main(int argc, char** argv){
         run_server(bsize, prot);
    }
    sleep(2);
-   run_client(bsize, prot);
+   run_client(bsize, prot, threaded);
    if (prot == SOCK_STREAM)
         wait(p);
    else

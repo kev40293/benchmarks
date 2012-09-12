@@ -13,6 +13,9 @@ all: $(BENCHMARKS)
 diskbench: diskbench.o
 	$(CC) diskbench.o -o diskbench $(LDFLAGS)
 
+netbench: netbench.o
+	$(CC) netbench.o -o netbench $(LDFLAGS)
+
 $<: $<.o
 	$(CC) $<.o -o $< $(LDFLAGS) 
 
