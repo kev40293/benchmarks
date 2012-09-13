@@ -87,7 +87,7 @@ void run_server(int bsize, int protocol){
    serv.sin_port = htons(PORT);
    serv.sin_addr.s_addr = INADDR_ANY;
    if (bind(sock, (struct sockaddr *) &serv, sizeof(serv)) < 0){
-      perror("Bind Fail/n");
+      perror("Bind Fail\n");
       exit(1);
    }
    listen(sock, 5);
@@ -226,7 +226,10 @@ void run_client(int bsize, int protocol, int twrite, char* ip, int duration, int
    if (protocol == SOCK_STREAM){
       double st,en;
       st = getTime_usec();
-      send(sock, buffer, bsize, 0);
+      if (send(sock, buffer, bsize, 0) < 0){
+         perror("Failed latency test\n");
+         exit(1);
+      }
       if (recv(sock, buffer, bsize, 0) < 0){
          perror("Latency test failed/n");
          exit(1);
