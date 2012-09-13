@@ -223,7 +223,7 @@ void run_client(int bsize, int protocol, int twrite, char* ip, int duration, int
       dsize = dsize/2;
    }
 
-   if (protocol = SOCK_STREAM){
+   if (protocol == SOCK_STREAM){
       double st,en;
       st = getTime_usec();
       send(sock, buffer, bsize, 0);
