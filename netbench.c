@@ -7,72 +7,18 @@
 #include <netinet/in.h>
 #include <pthread.h>
 #include <math.h>
+#include "utils.h"
 #define PORT 10000
 #define ADDRESS "127.0.0.1"
 //#define TEST_SIZE 1024LL*1024LL*1024LL
 #define DURATION 10
+#define NAME "NETBENCH"
 
 const char * USAGE = "Usage: ./netbench [-pu] [-tN] [-bN[KMG]] [-dN[KMG]] [-s] [-c <ipaddress>]\n";
 
-double getTime_usec() {
-   struct timeval tp;
-   gettimeofday(&tp, NULL);
-   return (double) tp.tv_sec * 1E6 + (double)tp.tv_usec;
-}
-unsigned long string_to_bytes(char* bstring){
-   int last = strlen(bstring) - 1;
-   char end;
-   int scalar = 1;
-   end = bstring[last];
-   printf("data = %s %c\n", bstring, end);
-   switch (end){
-      case 'B':
-         bstring[last] = '\0';
-         scalar = atoi(bstring);
-         break;
-      case 'K':
-         bstring[last] = '\0';
-         scalar = atoi(bstring) << 10;
-         break;
-      case 'M':
-         bstring[last] = '\0';
-         scalar = atoi(bstring) << 20;
-         break;
-      case 'G':
-         bstring[last] = '\0';
-         scalar = atoi(bstring) << 30;
-         break;
-      default:
-         scalar = atoi(bstring);
-   }
-   return scalar;
-}
-
 char* calc_rate(int buffersize, int itr, double sec){
    double rate = 8.0*itr*buffersize/sec;
-   int pow = 0;
-   while (rate > 1024){
-      rate /= 1024.0;
-      pow++;
-   }
-   char *buf = (char*) malloc(sizeof(char)*30);
-   char blue;
-   switch (pow){
-      case 0:
-         blue = ' ';
-         break;
-      case 1:
-         blue = 'K';
-         break;
-      case 2:
-         blue = 'M';
-         break;
-      case 3:
-         blue = 'G';
-         break;
-   }
-   sprintf(buf, "%f %c", rate, blue);
-   return buf;
+   return bytes_to_string(rate);
 }
 
 void run_server(int bsize, int protocol){
@@ -181,7 +127,7 @@ void * client_thread(void *thread_args){
 
    return (void *) (0);
 }
-void run_client(int bsize, int protocol, int twrite, char* ip, int duration, int dsize){
+double run_client(int bsize, int protocol, int twrite, char* ip, int duration, int dsize){
    int sock;
 
    struct sockaddr_in serv;
@@ -223,6 +169,7 @@ void run_client(int bsize, int protocol, int twrite, char* ip, int duration, int
       dsize = dsize/2;
    }
 
+   double latency;
    if (protocol == SOCK_STREAM){
       double st,en;
       st = getTime_usec();
@@ -235,7 +182,8 @@ void run_client(int bsize, int protocol, int twrite, char* ip, int duration, int
          exit(1);
       }
       en = getTime_usec();
-      printf("Latency: %f ms\n", (en-st)/1E3);
+      latency = (en-st)/1E3;
+      printf("Latency: %f ms\n", latency);
    }
    if (dsize == 0){
       printf("Time test\n");
@@ -286,6 +234,12 @@ void run_client(int bsize, int protocol, int twrite, char* ip, int duration, int
    printf("Upspeed: %sbits/second\n", rate);
    close(sock);
    free(buffer);
+   printf("%s,%s,%d,%c,%f,%f\n",
+         NAME,
+         protocol == SOCK_STREAM ? "TCP" : "UDP",
+         bsize,
+         twrite ? 'Y':'N',
+         bsize/ttime*runs*1E6*8, latency);
 }
 
 int main(int argc, char** argv){
@@ -373,5 +327,6 @@ int main(int argc, char** argv){
             kill(p, 9);
          break;
    }
+
    return 0;
 }

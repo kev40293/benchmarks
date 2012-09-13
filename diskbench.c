@@ -4,22 +4,26 @@
 #include <stdio.h>
 #include "pthread.h"
 #include <sys/time.h>
+#include "utils.h"
 #define KB 1024
 #define MB 1048576
 #define GB 1073741824LL
 //#define BENCH (unsigned int)1024*1024*512*3
 #define BENCH GB
+#define NAME "DISKBENCH"
 const char* usage = "Usage: diskbench [-b[KMG]] [-rt]";
 struct opts {
 	short read;
 	short threaded;
 	long bsize;
 };
+/*
 double getTime_usec() {
    struct timeval tp;
    gettimeofday(&tp, NULL);
    return (double) tp.tv_sec * 1E6 + (double)tp.tv_usec;
 }
+*/
 struct targs {
 	FILE * f;
 	char * d;
@@ -122,8 +126,9 @@ int main(int argc, char** argv){
 						case 'G': s = s << 10;
 						case 'M': s = s << 10;
 						case 'K': s = s << 10;
+                                                case 'B': s = s;
 							break;
-						default: s = s;
+						default:
 							fprintf(stderr,"invalid block size\n%s\n", usage);
 							exit(1);
 					}
@@ -166,5 +171,12 @@ int main(int argc, char** argv){
                       "Write",
                       1000*1024/time*ratio);
         }
+        printf("%s,%ld,%c,%c,%f,%sB\n",
+           NAME,
+		options->bsize,
+		options->read ? 'R' : 'W',
+		options->threaded ? 'Y' : 'N',
+                (1000/time*BENCH),
+                bytes_to_string(1000/time*BENCH));
    return 0;
 }
