@@ -12,7 +12,7 @@
 //#define TEST_SIZE 1024LL*1024LL*1024LL
 #define DURATION 10
 
-const char * USAGE = "Usage: ./netbench -p [tcp|udp] [-t] -bN [-s] [-c <ipaddress>]\n";
+const char * USAGE = "Usage: ./netbench [-pu] [-tN] [-bN[KMG]] [-dN[KMG]] [-s] [-c <ipaddress>]\n";
 
 double getTime_usec() {
    struct timeval tp;
