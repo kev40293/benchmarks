@@ -1,6 +1,6 @@
 CC=gcc
 CFLAGS=
-LDFLAGS=-lpthread
+LDFLAGS=-lpthread -lm
 BENCHMARKS=membench cpubench diskbench netbench
 
 .SUFFIXES: .o .c

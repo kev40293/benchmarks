@@ -1,20 +1,78 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <pthread.h>
+#include <math.h>
 #define PORT 10000
 #define ADDRESS "127.0.0.1"
-#define TEST_SIZE 1024LL*1024LL*1024LL
+//#define TEST_SIZE 1024LL*1024LL*1024LL
+#define DURATION 10
 
-const char * USAGE = "Usage: ./netbench -p [tcp|udp] [-t] -bN\n";
+const char * USAGE = "Usage: ./netbench -p [tcp|udp] [-t] -bN [-s] [-c <ipaddress>]\n";
 
 double getTime_usec() {
    struct timeval tp;
    gettimeofday(&tp, NULL);
    return (double) tp.tv_sec * 1E6 + (double)tp.tv_usec;
+}
+unsigned long string_to_bytes(char* bstring){
+   int last = strlen(bstring) - 1;
+   char end;
+   int scalar = 1;
+   end = bstring[last];
+   printf("data = %s %c\n", bstring, end);
+   switch (end){
+      case 'B':
+         bstring[last] = '\0';
+         scalar = atoi(bstring);
+         break;
+      case 'K':
+         bstring[last] = '\0';
+         scalar = atoi(bstring) << 10;
+         break;
+      case 'M':
+         bstring[last] = '\0';
+         scalar = atoi(bstring) << 20;
+         break;
+      case 'G':
+         bstring[last] = '\0';
+         scalar = atoi(bstring) << 30;
+         break;
+      default:
+         scalar = atoi(bstring);
+   }
+   return scalar;
+}
+
+char* calc_rate(int buffersize, int itr, double sec){
+   double rate = itr*buffersize*8.0/sec;
+   int pow = 0;
+   while (rate > 1024){
+      rate /= 1024.0;
+      pow++;
+   }
+   char *buf = (char*) malloc(sizeof(char)*30);
+   char blue;
+   switch (pow){
+      case 0:
+         blue = ' ';
+         break;
+      case 1:
+         blue = 'K';
+         break;
+      case 2:
+         blue = 'M';
+         break;
+      case 3:
+         blue = 'G';
+         break;
+   }
+   sprintf(buf, "%f %c", rate, blue);
+   return buf;
 }
 
 void run_server(int bsize, int protocol){
@@ -74,17 +132,6 @@ void run_server(int bsize, int protocol){
       if (rc < 0){
          perror("Failed read\n");
       }
-      /*
-      double netspeed = TEST_SIZE/2E9/(end-start)*8*10E6;
-      netspeed /= (end-start);
-      char unit = 'G';
-      if (netspeed < 1){
-         unit = 'M';
-         netspeed *= 2E10;
-      }
-      //printf("Read %lld in %f milliseconds\n", TEST_SIZE, (end-start)*10E3);
-      //printf("Downspeed: %f %cbits/second\n", netspeed, unit);
-      */
       free(buffer);
       close(newsock);
       close(sock);
@@ -112,37 +159,64 @@ void * client_thread(void *thread_args){
    }
    pthread_exit(NULL);
 }
-void run_client(int bsize, int protocol, int twrite, char* ip){
+void run_client(int bsize, int protocol, int twrite, char* ip, int duration, int dsize){
    int sock;
+
    struct sockaddr_in serv;
    sock = socket(AF_INET, protocol, 0);
    serv.sin_family = AF_INET;
    serv.sin_port = htons(PORT);
    char * ipaddr = ip == NULL ? ADDRESS : ip;
    inet_pton(AF_INET, ipaddr, &(serv.sin_addr));
+
    char *buffer;
    buffer = (char*) malloc(sizeof(char)*bsize);
-   if (protocol == SOCK_RAW){
-      int si = sizeof(serv);
-      int q;
-      int s = getTime_usec();
-      for (q = 0; q < 10; q++){
-         write(sock, buffer, bsize);
-         recvfrom(sock, buffer, bsize, 0, (struct sockaddr*) &serv, &si);
-      }
-      int e = getTime_usec();
-      printf("%f\n", (e-s)/20/10E3);
-      return;
-   }
+
    if (connect(sock, (struct sockaddr *) &serv, sizeof(serv))< 0){
       perror("Connect Failed\n");
       exit(1);
    }
    printf("Connected to %s on port %d\n", ipaddr, PORT);
-   int i;
-   i = TEST_SIZE/bsize;
+
+   int runs;
+   runs = (int) ceil (dsize/bsize);
+
    printf("Writing data over network\n");
    double start,end;
+
+   duration = duration*1E6;
+   if (dsize == 0){
+      printf("Time test\n");
+      start = getTime_usec();
+      do {
+         if (write(sock, buffer,bsize) < 0){
+            perror("Failed Write\n");
+            exit(0);
+         }
+         runs++;
+      }while ((end = getTime_usec()) - start < duration);
+   }
+   else {
+      int i;
+      printf("Data test\n");
+      start = getTime_usec();
+      for (i = runs; i>0; i--){
+         if (write(sock, buffer,bsize) < 0){
+            perror("Failed Write\n");
+            exit(0);
+         }
+      }
+      end = getTime_usec();
+   }
+   char* rate = calc_rate(bsize, runs, (end-start)/1E6);
+   printf("Write %d in %f seconds\n", runs*bsize, (end-start)/1E6);
+   printf("Upspeed: %sbits/second\n", rate);
+   close(sock);
+   free(buffer);
+
+   /*
+
+
    struct cargs threada;
    pthread_t thread;
    void * status;
@@ -165,16 +239,15 @@ void run_client(int bsize, int protocol, int twrite, char* ip){
    }
    if (twrite) pthread_join(thread, &status);
    end = getTime_usec();
-   printf("Write %lld in %f milliseconds\n", TEST_SIZE, (end-start)/1E3);
-   printf("Upspeed: %f Gbits/second\n", TEST_SIZE/2E9*8*1E6/(end-start));
-   close(sock);
-   free(buffer);
+   */
 }
 
 int main(int argc, char** argv){
-   int i, prot, threaded, bsize, mode;
+   int i, prot, threaded, bsize, mode, duration;
+   unsigned long test_size = 0;
+   duration = DURATION;
    char * ip;
-   prot = 0;
+   prot = SOCK_STREAM;
    threaded = 0;
    bsize = 1;
    mode = 0;
@@ -183,32 +256,36 @@ int main(int argc, char** argv){
       char* ar;
       if ((ar =argv[i])[0] == '-'){
          switch(ar[1]) {
-            case 'p':
-               i++;
-               if (strcmp(argv[i],"tcp") == 0) prot = SOCK_STREAM;
-               else if (strcmp(argv[i],"udp") == 0) prot = SOCK_DGRAM;
-               else {
-                  printf("Invalid Protocol\n%s", USAGE);
-                  exit(1);
-               }
+            case 'u': // udp mode
+               prot = SOCK_DGRAM;
                break;
-            case 't':
+            case 'p': // parallel mode
                threaded |= 1;
                break;
-            case 'b':
-               bsize = atoi(ar+2);
+            case 'b': // block/buffer size
+               bsize = string_to_bytes(ar+2);
                if (!bsize){
                   printf("Invalid size\n%s", USAGE);
                   exit(0);
                }
                break;
-            case 's':
+            case 's': // server mode
                mode |= 2;
                break;
-            case 'c':
+            case 'c': // client mode
                mode |= 1;
                if (argv[i+1][0] != '-')
                   ip = argv[i+1];
+               break;
+            case 'd': // data to transfer
+               test_size = string_to_bytes(ar+2);
+               break;
+            case 't': // non-default time parameter
+               duration = atoi(argv[i]+1);
+               if (duration == 0){
+                  fprintf(stderr, "Invalid time parameter\n");
+                  exit(1);
+               }
                break;
             default:
                printf("Invalid Argument\n%s", USAGE);
@@ -223,23 +300,23 @@ int main(int argc, char** argv){
    printf("Protocol: %s\n", prot == SOCK_STREAM ? "TCP" : "UDP");
    printf("Threaded: %s\n", threaded ? "Yes": "No");
    printf("Buffer Size: %d\n", bsize);
-   printf("Buffer Size: %d\n", mode);
    int p;
    switch(mode){
       case 1:
          printf("Client Mode\n");
-         run_client(bsize, prot, threaded, ip);
+         run_client(bsize, prot, threaded, ip, duration, test_size);
          break;
       case 2:
          printf("Server Mode\n");
          run_server(bsize, prot);
          break;
       default:
+         printf("Localhost test\n");
          if ((p = fork()) == 0){
             run_server(bsize, prot);
          }
          sleep(2);
-         run_client(bsize, prot, threaded, ip);
+         run_client(bsize, prot, threaded, ip, duration, test_size);
          if (prot == SOCK_STREAM)
             wait(p);
          else
