@@ -32,8 +32,19 @@ void run_server(int bsize, int protocol){
       perror("Bind Fail/n");
       exit(1);
    }
-   printf("Listening on localhost at port 10000\n");
+   while (protocol == SOCK_RAW){
+      struct sockaddr_in pingsock;
+      char buf[bsize];
+      int size = sizeof(sock);
+      while (recvfrom(sock, &buf, bsize, 0, (struct sockaddr *)&pingsock, &size) > 0){
+         sendto(sock, &buf, bsize, 0, (struct sockaddr *) &pingsock, size);
+      }
+      close(sock);
+      exit(0);
+   }
    listen(sock, 5);
+   printf("Listening on localhost at port 10000\n");
+
    while (protocol == SOCK_DGRAM){
       struct sockaddr_in udpsock;
       char * buf;
@@ -41,6 +52,8 @@ void run_server(int bsize, int protocol){
       int size = sizeof(sock);
       while (recvfrom(sock, &buf, bsize, 0, (struct sockaddr *)&udpsock, &size) > 0);
       free(buf);
+      close(sock);
+      exit(0);
    }
    while (protocol == SOCK_STREAM){
       int addrlen, newsock;
@@ -74,9 +87,9 @@ void run_server(int bsize, int protocol){
       */
       free(buffer);
       close(newsock);
+      close(sock);
       exit(0);
    }
-   close(sock);
 }
 
 struct cargs {
@@ -99,19 +112,33 @@ void * client_thread(void *thread_args){
    }
    pthread_exit(NULL);
 }
-void run_client(int bsize, int protocol, int twrite){
+void run_client(int bsize, int protocol, int twrite, char* ip){
    int sock;
    struct sockaddr_in serv;
    sock = socket(AF_INET, protocol, 0);
    serv.sin_family = AF_INET;
    serv.sin_port = htons(PORT);
-   inet_pton(AF_INET, ADDRESS, &(serv.sin_addr));
+   char * ipaddr = ip == NULL ? ADDRESS : ip;
+   inet_pton(AF_INET, ipaddr, &(serv.sin_addr));
+   char *buffer;
+   buffer = (char*) malloc(sizeof(char)*bsize);
+   if (protocol == SOCK_RAW){
+      int si = sizeof(serv);
+      int q;
+      int s = getTime_usec();
+      for (q = 0; q < 10; q++){
+         write(sock, buffer, bsize);
+         recvfrom(sock, buffer, bsize, 0, (struct sockaddr*) &serv, &si);
+      }
+      int e = getTime_usec();
+      printf("%f\n", (e-s)/20/10E3);
+      return;
+   }
    if (connect(sock, (struct sockaddr *) &serv, sizeof(serv))< 0){
       perror("Connect Failed\n");
       exit(1);
    }
-   char *buffer;
-   buffer = (char*) malloc(sizeof(char)*bsize);
+   printf("Connected to %s on port %d\n", ipaddr, PORT);
    int i;
    i = TEST_SIZE/bsize;
    printf("Writing data over network\n");
@@ -145,13 +172,13 @@ void run_client(int bsize, int protocol, int twrite){
 }
 
 int main(int argc, char** argv){
-   int i;
-   int prot;
-   int threaded;
-   int bsize;
+   int i, prot, threaded, bsize, mode;
+   char * ip;
    prot = 0;
    threaded = 0;
    bsize = 1;
+   mode = 0;
+   ip = NULL;
    for (i=0; i< argc; i++){
       char* ar;
       if ((ar =argv[i])[0] == '-'){
@@ -175,6 +202,14 @@ int main(int argc, char** argv){
                   exit(0);
                }
                break;
+            case 's':
+               mode |= 2;
+               break;
+            case 'c':
+               mode |= 1;
+               if (argv[i+1][0] != '-')
+                  ip = argv[i+1];
+               break;
             default:
                printf("Invalid Argument\n%s", USAGE);
                exit(0);
@@ -182,21 +217,34 @@ int main(int argc, char** argv){
       }
    }
    if (!prot){
-      printf("%s", USAGE);
-      exit(1);
+      printf("Ping Test\n");
+      prot = SOCK_RAW;
    }
    printf("Protocol: %s\n", prot == SOCK_STREAM ? "TCP" : "UDP");
    printf("Threaded: %s\n", threaded ? "Yes": "No");
    printf("Buffer Size: %d\n", bsize);
+   printf("Buffer Size: %d\n", mode);
    int p;
-   if ((p = fork()) == 0){
-        run_server(bsize, prot);
+   switch(mode){
+      case 1:
+         printf("Client Mode\n");
+         run_client(bsize, prot, threaded, ip);
+         break;
+      case 2:
+         printf("Server Mode\n");
+         run_server(bsize, prot);
+         break;
+      default:
+         if ((p = fork()) == 0){
+            run_server(bsize, prot);
+         }
+         sleep(2);
+         run_client(bsize, prot, threaded, ip);
+         if (prot == SOCK_STREAM)
+            wait(p);
+         else
+            kill(p, 9);
+         break;
    }
-   sleep(2);
-   run_client(bsize, prot, threaded);
-   if (prot == SOCK_STREAM)
-        wait(p);
-   else
-      kill(p, 9);
    return 0;
 }
