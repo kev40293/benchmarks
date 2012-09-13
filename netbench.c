@@ -90,16 +90,6 @@ void run_server(int bsize, int protocol){
       perror("Bind Fail/n");
       exit(1);
    }
-   while (protocol == SOCK_RAW){
-      struct sockaddr_in pingsock;
-      char buf[bsize];
-      int size = sizeof(sock);
-      while (recvfrom(sock, &buf, bsize, 0, (struct sockaddr *)&pingsock, &size) > 0){
-         sendto(sock, &buf, bsize, 0, (struct sockaddr *) &pingsock, size);
-      }
-      close(sock);
-      exit(0);
-   }
    listen(sock, 5);
    printf("Listening on localhost at port 10000\n");
 
@@ -108,7 +98,9 @@ void run_server(int bsize, int protocol){
       char * buf;
       buf = (char*) malloc(sizeof(char)*bsize);
       int size = sizeof(sock);
-      while (recvfrom(sock, &buf, bsize, 0, (struct sockaddr *)&udpsock, &size) > 0);
+      if (recvfrom(sock, buf, bsize, 0, (struct sockaddr *)&udpsock, &size) > 0)
+         sendto(sock, buf, bsize, 0, (struct sockaddr *)&udpsock, size);
+      while (recvfrom(sock, buf, bsize, 0, (struct sockaddr *)&udpsock, &size) > 0);
       free(buf);
       close(sock);
       exit(0);
@@ -127,6 +119,8 @@ void run_server(int bsize, int protocol){
       int rc;
       //int start, end;
       //start = getTime_usec();
+      if (rc= recv(newsock,buffer,bsize, 0) > 0)
+         send(newsock, buffer, bsize, 0);
       while((rc = recv(newsock, buffer, bsize, 0)) > 0) { }
       //end = getTime_usec();
       if (rc < 0){
@@ -229,6 +223,17 @@ void run_client(int bsize, int protocol, int twrite, char* ip, int duration, int
       dsize = dsize/2;
    }
 
+   if (protocol = SOCK_STREAM){
+      double st,en;
+      st = getTime_usec();
+      send(sock, buffer, bsize, 0);
+      if (recv(sock, buffer, bsize, 0) < 0){
+         perror("Latency test failed/n");
+         exit(1);
+      }
+      en = getTime_usec();
+      printf("Latency: %f ms\n", (en-st)/1E3);
+   }
    if (dsize == 0){
       printf("Time test\n");
       if (twrite){
@@ -272,6 +277,7 @@ void run_client(int bsize, int protocol, int twrite, char* ip, int duration, int
       ttime = thd_arg.dur;
    }
    ttime = (ttime + end - start)/2;
+   if (!twrite) ttime *= 2;
    char* rate = calc_rate(bsize, runs, (ttime)/1E6);
    printf("Write %ld in %f seconds\n", (long)runs*bsize, ttime/1E6);
    printf("Upspeed: %sbits/second\n", rate);
