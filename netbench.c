@@ -44,8 +44,8 @@ void run_server(int bsize, int protocol){
       char * buf;
       buf = (char*) malloc(sizeof(char)*bsize);
       int size = sizeof(sock);
-      if (recvfrom(sock, buf, bsize, 0, (struct sockaddr *)&udpsock, &size) > 0)
-         sendto(sock, buf, bsize, 0, (struct sockaddr *)&udpsock, size);
+      //if (recvfrom(sock, buf, bsize, 0, (struct sockaddr *)&udpsock, &size) > 0)
+      //   sendto(sock, buf, bsize, 0, (struct sockaddr *)&udpsock, size);
       while (recvfrom(sock, buf, bsize, 0, (struct sockaddr *)&udpsock, &size) > 0);
       free(buf);
       close(sock);
@@ -172,8 +172,9 @@ double run_client(int bsize, int protocol, int twrite, char* ip, int duration, i
    double latency;
    if (protocol == SOCK_STREAM){
       double st,en;
+      char boom[32];
       st = getTime_usec();
-      if (send(sock, buffer, bsize, 0) < 0){
+      if (send(sock, boom, 32, 0) < 0){
          perror("Failed latency test\n");
          exit(1);
       }

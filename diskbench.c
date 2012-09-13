@@ -62,11 +62,11 @@ double bench_write(struct opts * op) {
 	}
 	else {
 		start = getTime_usec();
-		int rc = fwrite(data, (size_t) op->bsize, BENCH/op->bsize, file);
+		rc = fwrite(data, (size_t) op->bsize, BENCH/op->bsize, file);
 		end = getTime_usec();
 	}	
 	if (!rc){
-		fprintf(stderr, "Write failure\n");
+		fprintf(stderr, "Write failure %d  :  %lld/n", rc, BENCH);
 		exit(1);
 	}
 	fprintf(stdout, "time: %f\n", (end-start)/1000);
@@ -171,12 +171,11 @@ int main(int argc, char** argv){
                       "Write",
                       1000*1024/time*ratio);
         }
-        printf("%s,%ld,%c,%c,%f,%sB\n",
+        printf("%s,%ld,%c,%c,%f\n",
            NAME,
 		options->bsize,
 		options->read ? 'R' : 'W',
 		options->threaded ? 'Y' : 'N',
-                (1000/time*BENCH),
-                bytes_to_string(1000/time*BENCH));
+                (1000/time*BENCH));
    return 0;
 }
