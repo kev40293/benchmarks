@@ -139,6 +139,9 @@ int main(int argc, char** argv){
 					if(argv[i][2] == 'r')
 						options->read |= 1;
 					break;
+                                case 'h':
+                                        fprintf(stdout, "%s\n", usage);
+                                        exit(0);
 				default:
 					fprintf(stderr, "unrecognized option\n%s\n", usage);
 					exit(1);

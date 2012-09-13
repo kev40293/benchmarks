@@ -333,6 +333,10 @@ int main(int argc, char** argv){
                   exit(1);
                }
                break;
+            case 'h':
+               fprintf(stdout, "%s", USAGE);
+               exit(0);
+               break;
             default:
                printf("Invalid Argument\n%s", USAGE);
                exit(0);
