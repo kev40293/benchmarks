@@ -49,7 +49,7 @@ unsigned long string_to_bytes(char* bstring){
 }
 
 char* calc_rate(int buffersize, int itr, double sec){
-   double rate = itr*buffersize*8.0/sec;
+   double rate = 8.0*itr*buffersize/sec;
    int pow = 0;
    while (rate > 1024){
       rate /= 1024.0;
@@ -139,25 +139,53 @@ void run_server(int bsize, int protocol){
    }
 }
 
+struct cstatus {
+   long runs;
+   double time;
+};
 struct cargs {
    int sockfd;
    char *buff;
    int bufsize;
-   int num;
+   long num;
+   double dur;
+   int dat;
 };
 #define TARG ((struct cargs*) thread_args)
 void * client_thread(void *thread_args){
    int s = TARG->sockfd;
    char *b = TARG->buff;
    int bs = TARG->bufsize;
-   int n = TARG->num;
-   for ( ; n > 0; n--){
-      if(write(s, b, bs) < 0){
-         perror ("Thread write failed");
-         exit(1);
-      }
+   long n = TARG->num;
+   int t = TARG->dur;
+   int ds = TARG->dat;
+
+   double start, end;
+   if (n == 0){
+      start = getTime_usec();
+      do{
+         if(write(s, b, bs) < 0){
+            perror ("Thread write failed");
+            exit(1);
+         }
+         n++;
+      } while ((end = getTime_usec()) - start < t);
    }
-   pthread_exit(NULL);
+   else{
+      long x;
+      start = getTime_usec();
+      for (x = n; n > 0; n--){
+         if(write(s, b, bs) < 0){
+            perror ("Thread write failed");
+            exit(1);
+         }
+      }
+      end = getTime_usec();
+   }
+   TARG->num = n;
+   TARG->dur = end-start;
+
+   return (void *) (0);
 }
 void run_client(int bsize, int protocol, int twrite, char* ip, int duration, int dsize){
    int sock;
@@ -178,15 +206,38 @@ void run_client(int bsize, int protocol, int twrite, char* ip, int duration, int
    }
    printf("Connected to %s on port %d\n", ipaddr, PORT);
 
-   int runs;
-   runs = (int) ceil (dsize/bsize);
+   long runs;
+   runs = (long) ceil (dsize/bsize);
 
    printf("Writing data over network\n");
    double start,end;
 
    duration = duration*1E6;
+
+   struct cargs thd_arg;
+   struct cstatus thd_ret;
+   pthread_t thread;
+   if(twrite){
+      thd_arg.sockfd = sock;
+      thd_arg.buff = buffer+bsize/2;
+      thd_arg.bufsize = bsize;
+      thd_arg.num = runs/2;
+      thd_arg.dur = duration;
+      thd_arg.dat = dsize/2;
+
+      runs = (runs/2.0)+.5;
+      dsize = dsize/2;
+   }
+
    if (dsize == 0){
       printf("Time test\n");
+      if (twrite){
+         if (pthread_create(&thread, NULL, &client_thread, (void*) &thd_arg) <0){
+            fprintf(stderr, "Failed to create thread\n");
+            exit(1);
+         }
+      }
+
       start = getTime_usec();
       do {
          if (write(sock, buffer,bsize) < 0){
@@ -199,6 +250,12 @@ void run_client(int bsize, int protocol, int twrite, char* ip, int duration, int
    else {
       int i;
       printf("Data test\n");
+      if (twrite){
+         if (pthread_create(&thread, NULL, &client_thread, (void*) &thd_arg) <0){
+            fprintf(stderr, "Failed to create thread\n");
+            exit(1);
+         }
+      }
       start = getTime_usec();
       for (i = runs; i>0; i--){
          if (write(sock, buffer,bsize) < 0){
@@ -208,38 +265,18 @@ void run_client(int bsize, int protocol, int twrite, char* ip, int duration, int
       }
       end = getTime_usec();
    }
-   char* rate = calc_rate(bsize, runs, (end-start)/1E6);
-   printf("Write %d in %f seconds\n", runs*bsize, (end-start)/1E6);
+   double ttime = 0;
+   if (twrite){
+      pthread_join(thread, NULL);
+      runs += thd_arg.num;
+      ttime = thd_arg.dur;
+   }
+   ttime = (ttime + end - start)/2;
+   char* rate = calc_rate(bsize, runs, (ttime)/1E6);
+   printf("Write %ld in %f seconds\n", (long)runs*bsize, ttime/1E6);
    printf("Upspeed: %sbits/second\n", rate);
    close(sock);
    free(buffer);
-
-   /*
-
-
-   struct cargs threada;
-   pthread_t thread;
-   void * status;
-   if (twrite){
-      threada.bufsize = bsize;
-      i = i >> 1;
-      threada.num = i;
-      threada.sockfd = sock;
-      threada.buff = buffer;
-   }
-   start = getTime_usec();
-   if (twrite){
-      pthread_create(&thread, NULL, &client_thread, (void*) &threada);
-   }
-   for (; i > 0; i--){
-        if (write(sock,buffer, bsize) < 0){
-           perror("Failed write\n");
-           exit(1);
-        }
-   }
-   if (twrite) pthread_join(thread, &status);
-   end = getTime_usec();
-   */
 }
 
 int main(int argc, char** argv){
@@ -281,7 +318,7 @@ int main(int argc, char** argv){
                test_size = string_to_bytes(ar+2);
                break;
             case 't': // non-default time parameter
-               duration = atoi(argv[i]+1);
+               duration = atoi(argv[i]+2);
                if (duration == 0){
                   fprintf(stderr, "Invalid time parameter\n");
                   exit(1);
