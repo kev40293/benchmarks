@@ -1,0 +1,29 @@
+Usage: ./netbench [-pu] [-tN] [-bN[KMG]] [-dN[KMG]] [-s] [-c <ipaddress>]
+
+-p      run parallel clients
+-u      Run in udp mode
+-tN     Run for N seconds
+-bN[KMG] use buffer size of N[KMG] bytes
+-dN     send N bytes instead of for specific duration
+-s      Run in server mode
+-c <ipaddress>
+        Run in client mode to server on ipaddress
+
+The netbench program performs benchmarking of the network connection between
+two nodes or over the local loopback interface. If no data parameter is
+specified then the program will send as much data as it can over the network
+in ten seconds. If a -t parameter is specified it will use that time instead.
+if -d is specified, the program will send the specified amount of data over
+the network instead of for a specific time. The default protocol used is TCP
+but is set to use UDP by specifying the -u parameter. By using -b the user can
+specify the buffer size to use for network sends.
+
+By default if neither -c or -s are specified, the program will run both the
+client and server internally and benchmark the local loopback interface. If
+the user specifies -s, the program will run in server mode and wait for the
+client to connect. The client is run with -c and specifies the ip address the
+server is listening on. If both -s and -c are set then it will run as if
+neither are.
+
+The output of the benchmark is in the appropriate measurement of bits per
+second.
