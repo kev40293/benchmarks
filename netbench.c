@@ -65,8 +65,11 @@ void run_server(int bsize, int protocol){
       int rc;
       //int start, end;
       //start = getTime_usec();
-      if (rc= recv(newsock,buffer,bsize, 0) > 0)
-         send(newsock, buffer, bsize, 0);
+      int lat;
+      for (lat = 0; lat < 10; lat++){
+         if (rc= recv(newsock,buffer,bsize, 0) > 0)
+            send(newsock, buffer, bsize, 0);
+      }
       while((rc = recv(newsock, buffer, bsize, 0)) > 0) { }
       //end = getTime_usec();
       if (rc < 0){
@@ -173,17 +176,20 @@ double run_client(int bsize, int protocol, int twrite, char* ip, int duration, i
    if (protocol == SOCK_STREAM){
       double st,en;
       char boom[32];
+      int pacnum;
       st = getTime_usec();
-      if (send(sock, boom, 32, 0) < 0){
-         perror("Failed latency test\n");
-         exit(1);
-      }
-      if (recv(sock, buffer, bsize, 0) < 0){
-         perror("Latency test failed/n");
-         exit(1);
+      for (pacnum =0; pacnum < 10; pacnum++){
+         if (send(sock, boom, 32, 0) < 0){
+            perror("Failed latency test\n");
+            exit(1);
+         }
+         if (recv(sock, buffer, bsize, 0) < 0){
+            perror("Latency test failed/n");
+            exit(1);
+         }
       }
       en = getTime_usec();
-      latency = (en-st)/1E3;
+      latency = (en-st)/1E4;
       printf("Latency: %f ms\n", latency);
    }
    if (dsize == 0){
