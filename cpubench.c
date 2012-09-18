@@ -35,7 +35,7 @@ void* sumi(void* m) {
 double run_threads(int num, void *(*func) (void *), void *arg) {
   int j;
   thread_info_t *store = (thread_info_t*) malloc(sizeof(thread_info_t) * num);
-  double a = get_clock(CLOCK_REALTIME);
+  double a = get_clock(CLOCK_PROCESS_CPUTIME_ID);
   
   for (j = 0;j < num;j++) {
     store[j].arg = arg;
@@ -50,11 +50,11 @@ double run_threads(int num, void *(*func) (void *), void *arg) {
   }
   free(store);
 
-  return get_clock(CLOCK_REALTIME) - a;
+  return get_clock(CLOCK_PROCESS_CPUTIME_ID) - a;
 }
 
 int main() {
-  long n = 100000000;
+  long n = 10000000;
   int i, j, threads[3] = {1,2,4};
   double nd = (double) n, d_total, i_total;
   
