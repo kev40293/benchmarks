@@ -48,7 +48,7 @@ double run_threads(int num, void *(*func) (void *), void *arg) {
       exit(1);
     }
   }
-  for (j=0; j < num; j++) {
+  for (j = 0; j < num; j++) {
     pthread_join(store[j].tid, NULL);
   }
   free(store);
