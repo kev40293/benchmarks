@@ -1,6 +1,6 @@
 CC=gcc
 CFLAGS=
-LDFLAGS=-lpthread -lm
+LDFLAGS=-lpthread -lm -lrt
 BENCHMARKS=membench cpubench diskbench netbench
 
 .SUFFIXES: .o .c
@@ -15,6 +15,9 @@ diskbench: diskbench.o
 
 netbench: netbench.o
 	$(CC) netbench.o -o netbench $(LDFLAGS)
+
+cpubench: cpubench.o
+	$(CC) cpubench.o -o cpubench $(LDFLAGS)
 
 $<: $<.o
 	$(CC) $<.o -o $< $(LDFLAGS) 
