@@ -23,6 +23,8 @@ function net {
           ./netbench -b$i -p | grep "NETBENCH"
           ./netbench -b$i -u | grep "NETBENCH"
           ./netbench -b$i -u -p| grep "NETBENCH"
+       done
+       }
 
 disk
 net

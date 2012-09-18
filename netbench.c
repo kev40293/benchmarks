@@ -44,8 +44,8 @@ void run_server(int bsize, int protocol){
       char * buf;
       buf = (char*) malloc(sizeof(char)*bsize);
       int size = sizeof(sock);
-      //if (recvfrom(sock, buf, bsize, 0, (struct sockaddr *)&udpsock, &size) > 0)
-      //   sendto(sock, buf, bsize, 0, (struct sockaddr *)&udpsock, size);
+      if (recvfrom(sock, buf, bsize, 0, (struct sockaddr *)&udpsock, &size) > 0)
+         sendto(sock, buf, bsize, 0, (struct sockaddr *)&udpsock, size);
       while (recvfrom(sock, buf, bsize, 0, (struct sockaddr *)&udpsock, &size) > 0);
       free(buf);
       close(sock);
@@ -188,6 +188,25 @@ double run_client(int bsize, int protocol, int twrite, char* ip, int duration, i
             exit(1);
          }
       }
+      en = getTime_usec();
+      latency = (en-st)/1E4;
+      printf("Latency: %f ms\n", latency);
+   }
+   if (protocol == SOCK_DGRAM){
+      double st,en;
+      char boom[32];
+      int pacnum;
+      st = getTime_usec();
+      //for (pacnum =0; pacnum < 10; pacnum++){
+         if (send(sock, boom, 32, 0) < 0){
+            perror("Failed latency test\n");
+            exit(1);
+         }
+         if (recv(sock, buffer, bsize, 0) < 0){
+            perror("Latency test failed\n");
+            exit(1);
+         }
+      //}
       en = getTime_usec();
       latency = (en-st)/1E4;
       printf("Latency: %f ms\n", latency);

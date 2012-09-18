@@ -35,7 +35,7 @@ void* sumi(void* m) {
 double run_threads(int num, void *(*func) (void *), void *arg) {
   int j;
   thread_info_t *store = (thread_info_t*) malloc(sizeof(thread_info_t) * num);
-  double a = get_clock(CLOCK_PROCESS_CPUTIME_ID);
+  double a = get_clock(CLOCK_REALTIME);
   
   for (j = 0;j < num;j++) {
     store[j].arg = arg;
@@ -44,13 +44,12 @@ double run_threads(int num, void *(*func) (void *), void *arg) {
       exit(1);
     }
   }
-  
-  while (--j >= 0) {
+  for (j=0; j < num; j++) {
     pthread_join(store[j].tid, NULL);
   }
   free(store);
 
-  return get_clock(CLOCK_PROCESS_CPUTIME_ID) - a;
+  return get_clock(CLOCK_REALTIME) - a;
 }
 
 int main() {
@@ -60,7 +59,7 @@ int main() {
   
   for (i = 0;i < 3;i++) {
     d_total = run_threads(threads[i], sumd, (void*)&nd);
-    i_total = run_threads(threads[i], sumi, (void*)&n);
+    i_total = run_threads(threads[i], sumi, (void*)&n);printf("%10f,%10f\n",d_total,i_total);
     printf("Threads number: %2d, GFLOPS: %10f, GIOPS: %10f\n", threads[i], 
            (nd * threads[i]) / 1e9 / d_total, (n * threads[i]) / 1e9 / i_total);
   }
