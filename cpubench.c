@@ -24,12 +24,16 @@ void* sumd(void* m) {
   thread_info_t *t = (thread_info_t*)m;
   double n = *(double *)(t->arg), i;
   for (i = 0.0;i < n; i += 1.0);
+  pthread_getcpuclockid(t->tid, &t->cid);
+  t->time = get_clock(t->cid);
 }
 
 void* sumi(void* m) {
   thread_info_t *t = (thread_info_t*)m;
   long i, n = *(long *)(t->arg);
   for (i = 0;i < n; i++);
+  pthread_getcpuclockid(t->tid, &t->cid);
+  t->time = get_clock(t->cid);  
 }
 
 double run_threads(int num, void *(*func) (void *), void *arg) {
