@@ -54,7 +54,7 @@ double run_threads(int num, void *(*func) (void *), void *arg) {
 }
 
 int main() {
-  long n = 10000000;
+  long n = 100000000;
   int i, j, threads[3] = {1,2,4};
   double nd = (double) n, d_total, i_total;
   
