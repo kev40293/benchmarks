@@ -63,7 +63,7 @@ int main() {
   
   for (i = 0;i < 3;i++) {
     d_total = run_threads(threads[i], sumd, (void*)&nd);
-    i_total = run_threads(threads[i], sumi, (void*)&n);printf("%10f,%10f\n",d_total,i_total);
+    i_total = run_threads(threads[i], sumi, (void*)&n);
     printf("Threads number: %2d, GFLOPS: %10f, GIOPS: %10f\n", threads[i], 
            (nd * threads[i]) / 1e9 / d_total, (n * threads[i]) / 1e9 / i_total);
   }
