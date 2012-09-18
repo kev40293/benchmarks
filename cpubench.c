@@ -24,21 +24,18 @@ void* sumd(void* m) {
   thread_info_t *t = (thread_info_t*)m;
   double n = *(double *)(t->arg), i;
   for (i = 0.0;i < n; i += 1.0);
-  pthread_getcpuclockid(t->tid, &t->cid);
-  t->time = get_clock(t->cid);
 }
 
 void* sumi(void* m) {
   thread_info_t *t = (thread_info_t*)m;
   long i, n = *(long *)(t->arg);
   for (i = 0;i < n; i++);
-  pthread_getcpuclockid(t->tid, &t->cid);
-  t->time = get_clock(t->cid); 
 }
 
 double run_threads(int num, void *(*func) (void *), void *arg) {
   int j;
   thread_info_t *store = (thread_info_t*) malloc(sizeof(thread_info_t) * num);
+  double a = get_clock(CLOCK_REALTIME);
   
   for (j = 0;j < num;j++) {
     store[j].arg = arg;
@@ -48,19 +45,18 @@ double run_threads(int num, void *(*func) (void *), void *arg) {
     }
   }
   
-  double totaltime = 0.0;
   while (--j >= 0) {
     pthread_join(store[j].tid, NULL);
-    totaltime += store[j].time;
   }
   free(store);
-  return totaltime / (double) num;
+
+  return get_clock(CLOCK_REALTIME) - a;
 }
 
 int main() {
   long n = 100000000;
   int i, j, threads[3] = {1,2,4};
-  double time = 0.0, gflops, giops, nd = (double) n, d_total, i_total;
+  double nd = (double) n, d_total, i_total;
   
   for (i = 0;i < 3;i++) {
     d_total = run_threads(threads[i], sumd, (void*)&nd);
