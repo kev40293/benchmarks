@@ -18,13 +18,17 @@ double get_clock(clockid_t cid) {
   return (double) ts.tv_sec + ((double) ts.tv_nsec) / 1e9;
 }
 
-double run_threads(int num, void *(*func) (void *), void *arg) {
+void** run_threads_init_arg(void* arg) {
+
+}
+
+double run_threads(int num, void *(*func) (void *), void **arg) {
   int j;
   thread_info_t *store = (thread_info_t*) malloc(sizeof(thread_info_t) * num);
-  double a = get_clock(CLOCK_REALTIME);
-  
+
+  double a = get_clock(CLOCK_REALTIME);  
   for (j = 0;j < num;j++) {
-    store[j].arg = arg;
+    store[j].arg = arg[j];
     if (pthread_create(&store[j].tid, NULL, func, (void*)&store[j]) != 0) {
       fprintf(stderr, "Error creating thread, quit.\n");
       exit(1);
@@ -33,9 +37,23 @@ double run_threads(int num, void *(*func) (void *), void *arg) {
   for (j = 0; j < num; j++) {
     pthread_join(store[j].tid, NULL);
   }
+  double b = get_clock(CLOCK_REALTIME) - a;
   free(store);
 
-  return get_clock(CLOCK_REALTIME) - a;
+  return b;
+}
+
+long strtob(const char *str) {
+  long b = atoi(str);
+  if (b <= 0) return 0L;
+  char c = str[strlen(str)-1];
+  switch (c) {
+    case 'K' : b <<= 10; break;
+    case 'M' : b <<= 20; break;
+    case 'G' : b <<= 30; break;
+    default  : break;
+  }
+  return b;
 }
 
 #endif

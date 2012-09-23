@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
 #include <pthread.h>
 #include <time.h>
 #include "wutils.h"
@@ -26,8 +28,22 @@ int main() {
   double nd = (double) n, d_total, i_total;
   
   for (i = 0;i < 3;i++) {
-    d_total = run_threads(threads[i], sumd, (void*)&nd);
-    i_total = run_threads(threads[i], sumi, (void*)&n);
+    double **ds = (double**) malloc(sizeof(double*) * threads[i]);
+    j = 0;
+    while (j < threads[i]) {
+      ds[j++] = &nd;
+    }
+    d_total = run_threads(threads[i], sumd, (void**)ds);
+    free(ds);
+    //////////////////////////////////////////////////////////
+    long **ls = (long**) malloc(sizeof(long*) * threads[i]);
+    j = 0;
+    while (j < threads[i]) {
+      ls[j++] = &n;
+    }    
+    i_total = run_threads(threads[i], sumi, (void**)ls);
+    free(ls);
+    
     printf("Threads number: %2d, GFLOPS: %10f, GIOPS: %10f\n", threads[i], 
            (nd * threads[i]) / 1e9 / d_total, (n * threads[i]) / 1e9 / i_total);
   }
