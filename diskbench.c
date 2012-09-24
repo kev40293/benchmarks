@@ -31,12 +31,12 @@ struct targs {
 };
 #define ARGS ((struct targs*) argt)
 void * write_thread(void* argt){
-	fwrite (ARGS->d, (size_t) ARGS->bs, BENCH/2/(ARGS->bs), ARGS->f);
+	fwrite (ARGS->d, (size_t) ARGS->bs, BENCH/(ARGS->bs), ARGS->f);
 	pthread_exit(NULL);
 }
 
 void * read_thread(void * argt) {
-   fread(ARGS->d, (size_t) ARGS->bs, BENCH/2/(ARGS->bs), ARGS->f);
+   fread(ARGS->d, (size_t) ARGS->bs, BENCH/(ARGS->bs), ARGS->f);
    pthread_exit(NULL);
 }
 
@@ -51,7 +51,7 @@ double bench_write(struct opts * op) {
 		struct targs thread_args;
 		thread_args.bs = op->bsize;
 		thread_args.f = fopen("testfile", "w+b");
-		thread_args.d = data + BENCH;
+		thread_args.d = data;
 		void* status;
 		printf("Spawning write thread\n");
 		start=getTime_usec();
@@ -66,7 +66,7 @@ double bench_write(struct opts * op) {
 		end = getTime_usec();
 	}	
 	if (!rc){
-		fprintf(stderr, "Write failure %d  :  %lld/n", rc, BENCH);
+		fprintf(stderr, "Write failure %d  :  %lld\n", rc, BENCH);
 		exit(1);
 	}
 	fprintf(stdout, "time: %f\n", (end-start)/1000);
@@ -89,12 +89,12 @@ double bench_read(struct opts * op) {
            struct targs thread_args;
            thread_args.bs = op->bsize;
            thread_args.f = input;
-           thread_args.d = data + BENCH/2;
+           thread_args.d = data;
            void* status;
            printf("Spawning read thread\n");
            start=getTime_usec();
            rc = pthread_create(&thread, NULL, &read_thread, (void*) &thread_args);
-           rc +=fread(data, (size_t) op->bsize, BENCH/2/op->bsize, input);
+           rc +=fread(data, (size_t) op->bsize, BENCH/op->bsize, input);
            end=getTime_usec();
         }
         else{
