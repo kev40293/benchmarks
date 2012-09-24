@@ -51,12 +51,12 @@ double bench_write(struct opts * op) {
 		struct targs thread_args;
 		thread_args.bs = op->bsize;
 		thread_args.f = fopen("testfile", "w+b");
-		thread_args.d = data + BENCH/2;
+		thread_args.d = data + BENCH;
 		void* status;
 		printf("Spawning write thread\n");
 		start=getTime_usec();
 		rc = pthread_create(&thread, NULL, &write_thread, (void*) &thread_args);
-		rc += fwrite(data, (size_t) op->bsize, BENCH/2/op->bsize, file);
+		rc += fwrite(data, (size_t) op->bsize, BENCH/op->bsize, file);
 		pthread_join(thread, &status);
 		end = getTime_usec();
 	}
@@ -179,6 +179,6 @@ int main(int argc, char** argv){
 		options->bsize,
 		options->read ? 'R' : 'W',
 		options->threaded ? 'Y' : 'N',
-                (1000/time*BENCH));
+                options->threaded ? (1000/time*BENCH*2) : (1000/time*BENCH));
    return 0;
 }
