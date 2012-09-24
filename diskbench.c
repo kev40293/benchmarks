@@ -50,7 +50,7 @@ double bench_write(struct opts * op) {
 		pthread_t thread;
 		struct targs thread_args;
 		thread_args.bs = op->bsize;
-		thread_args.f = fopen("testfile", "w+b");
+		thread_args.f = fopen("testfile2", "w+b");
 		thread_args.d = data;
 		void* status;
 		printf("Spawning write thread\n");
@@ -88,7 +88,7 @@ double bench_read(struct opts * op) {
            pthread_t thread;
            struct targs thread_args;
            thread_args.bs = op->bsize;
-           thread_args.f = input;
+           thread_args.f = fopen("testfile", "rb");
            thread_args.d = data;
            void* status;
            printf("Spawning read thread\n");
