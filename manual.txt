@@ -1,0 +1,32 @@
+Usage: ./diskbench -[rt] -b[K,M,G]
+
+Performs disk I/O benchmark to determine read/write speeds
+
+-r      Run read benchmark instead of write
+-t      Run in threaded mode
+-b[KMG] Use a blocksize of K(ilobyte) M(egabyte) G(igabyte)
+
+EX: ./diskbench -t -bK
+        perform disk benchmark with multiple threads and a block size of 1 KB
+
+
+Network Benchmark Program
+
+Usage: ./netbench [-pu] [-tN] [-bN[KMG]] [-dN[KMG]] [-s] [-c <ipaddress>]
+
+-p      run parallel clients
+-u      Run in udp mode
+-tN     Run for N seconds
+-bN[KMG] use buffer size of N[KMG] bytes
+-dN     send N bytes instead of for specific duration
+-s      Run in server mode
+-c <ipaddress>
+        Run in client mode to server on ipaddress
+
+EX: 
+./netbench -s -b64K
+        Run in server mode with a buffer size of 64 KB
+
+./netbench -t10 -b64K -c 127.0.0.1
+        Connect to server at 127.0.0.1 and transmit 64KB blocks for 10 seconds
+                using tcp
