@@ -42,6 +42,6 @@ function cpub {
 }
 
 disk
-net
+#net
 mem
 cpub
