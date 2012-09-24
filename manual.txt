@@ -1,3 +1,26 @@
+CPU Benchmark Program
+
+Usage: ./cpubench
+
+Performs cpu benchmark to determine GFLOPS/GIOPS
+
+EX: ./cpubench
+
+Memory Benchmark Program
+
+Usage: ./membench
+
+Performs memory benchmark to determine read+write speeds, access speeds.
+
+Usage: ./membench -b x[B,K,M] -m [1,2,3] -t x
+
+-b      Block size, bytes/kilobytes/megabytes
+-t      Thread number
+-m      Mode, 1: Sequential access benchmark, 2: Random access benchmark, 3: Memcpy benchmark
+
+EX: ./membench -t 1 -b 1M -m 3
+    Performs memcpy benchmark using 1M block size and 1 thread.
+
 Usage: ./diskbench -[rt] -b[K,M,G]
 
 Performs disk I/O benchmark to determine read/write speeds
