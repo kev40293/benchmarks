@@ -25,6 +25,23 @@ function net {
           ./netbench -b$i -u -p| grep "NETBENCH"
        done
        }
+       
+function mem {
+    for i in  1B 1K 1M
+        do
+            for j in 1 2 3
+            do
+            ./membench -b $i -m $j -t 1 | grep "MEMBENCH"  
+            ./membench -b $i -m $j -t 2 | grep "MEMBENCH"           
+            done
+        done
+}        
+
+function cpub {
+  ./cpubench | grep "CPUBENCH"
+}
 
 disk
 net
+mem
+cpub

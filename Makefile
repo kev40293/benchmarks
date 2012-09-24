@@ -18,6 +18,9 @@ netbench: netbench.o
 
 cpubench: cpubench.o
 	$(CC) cpubench.o -o cpubench $(LDFLAGS)
+  
+membench: membench.o
+	$(CC) membench.o -o membench $(LDFLAGS)  
 
 $<: $<.o
 	$(CC) $<.o -o $< $(LDFLAGS) 

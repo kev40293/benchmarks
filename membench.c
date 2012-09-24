@@ -15,6 +15,8 @@
 #define SEQ_CAPA 32
 #define RND_CAPA 32
 
+#define NAME "MEMBENCH"
+
 struct targ {
   long processed;
   long size;
@@ -139,6 +141,8 @@ int main(int argc, char **argv) {
     free(space[j]);
   }
   free(space);
+  
+  printf("%s,%ld,%d,%d\n", NAME, block_size, threads_num, mode);
   
   return 0;
 }

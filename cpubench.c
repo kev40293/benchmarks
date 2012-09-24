@@ -6,6 +6,8 @@
 #include <time.h>
 #include "wutils.h"
 
+#define NAME "CPUBENCH"
+
 void* sumd(void* m) {
   thread_info_t *t = (thread_info_t*)m;
   double n = *(double *)(t->arg), i;
@@ -47,5 +49,8 @@ int main() {
     printf("Threads number: %2d, GFLOPS: %10f, GIOPS: %10f\n", threads[i], 
            (nd * threads[i]) / 1e9 / d_total, (n * threads[i]) / 1e9 / i_total);
   }
+  
+  printf("%s\n", NAME);
+  
   return 0;
 }
