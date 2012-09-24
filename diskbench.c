@@ -77,8 +77,11 @@ double bench_write(struct opts * op) {
 double bench_read(struct opts * op) {
 	double start, end;
 	FILE * input;
-	input = fopen("/dev/zero", "rb");
+	input = fopen("testfile", "w+b");
 	char* data = (char*) malloc(sizeof(char)*BENCH);
+        fwrite(data, (size_t) op->bsize, BENCH/op->bsize,  input);
+        rewind(input);
+        //fflush(input);
 	printf("Reading GB of data\n");
 	int rc;
         if (op->threaded) {
@@ -100,7 +103,7 @@ double bench_read(struct opts * op) {
            end = getTime_usec();
         }
 	if (!rc){
-		fprintf(stderr, "Read failur\n");
+		fprintf(stderr, "Read failure\n");
 		exit(1);
 	}
 	fprintf(stdout, "time: %f\n", (end-start)/1000);
