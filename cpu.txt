@@ -1,0 +1,3 @@
+Usage: ./cpubench
+
+Performs cpu benchmark using 1,2 and 4 threads
