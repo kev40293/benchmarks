@@ -53,3 +53,16 @@ EX:
 ./netbench -t10 -b64K -c 127.0.0.1
         Connect to server at 127.0.0.1 and transmit 64KB blocks for 10 seconds
                 using tcp
+
+Usage: ./cpubench
+
+Performs cpu benchmark using 1,2 and 4 threads
+
+
+Usage: ./membench -b x[B,K,M] -t x -m x
+
+Performs memory benchmark 
+
+-b x[B,K,M]      Block size, byte/kilobyte/megabyte
+-t x             Thread number
+-m [1-3]         1, Sequential access test, 2, Random access test, 3, Memcpy test

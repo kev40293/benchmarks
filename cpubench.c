@@ -48,9 +48,11 @@ int main() {
     
     printf("Threads number: %2d, GFLOPS: %10f, GIOPS: %10f\n", threads[i], 
            (nd * threads[i]) / 1e9 / d_total, (n * threads[i]) / 1e9 / i_total);
+    printf("%s,%2d,%10f,%10f\n", NAME, threads[i],
+           (nd * threads[i]) / 1e9 / d_total, (n * threads[i]) / 1e9 / i_total);
   }
   
-  printf("%s\n", NAME);
+  //printf("%s\n", NAME);
   
   return 0;
 }

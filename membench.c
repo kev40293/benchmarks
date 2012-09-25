@@ -142,7 +142,7 @@ int main(int argc, char **argv) {
   }
   free(space);
   
-  printf("%s,%ld,%d,%d\n", NAME, block_size, threads_num, mode);
+  printf("%s,%ld,%d,%d,%f\n", NAME, block_size, threads_num, mode, (double) processed / 1024 /1024 /t);
   
   return 0;
 }

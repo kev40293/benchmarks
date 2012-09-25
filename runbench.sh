@@ -41,7 +41,7 @@ function cpub {
   ./cpubench | grep "CPUBENCH"
 }
 
-disk
+#disk
 #net
 mem
 cpub
