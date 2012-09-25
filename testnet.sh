@@ -13,7 +13,7 @@ function net {
           ./netbench -b$i -p | grep "NETBENCH"
           sleep 1
        done
-   for i in 1B 1K 64K
+   for i in 1B 1K 32K
        do
           ./netbench -b$i -u | grep "NETBENCH"
           ./netbench -b$i -u -p| grep "NETBENCH"
