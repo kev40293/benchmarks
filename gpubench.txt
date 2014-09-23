@@ -1,0 +1,16 @@
+Compile: nvcc -o gpubench gpubench.cu
+Usage: ./gpubench [mg]
+
+./gpubench g runs the gpu flop/iop portion
+./gpubench m runs the gpu memory testing.
+
+Design:
+   The flop iop portion is done by taking two reasonably large arrays of either integers
+   or floats. It then adds all the elements of the arrays using the gpu
+   at least a million times. This way the gpu gets saturated with work and we can
+   better measure peak FLOP and IOP performance.
+
+   For the memory, we take two malloced regions in the GPU's memory and malloc between
+   the 2^30 times, using the various given block sizes. By using the same malloced regions
+   we cut out the time for mallocing and freeing and concentrate on the time to move
+   the data in the GPU's memory.
