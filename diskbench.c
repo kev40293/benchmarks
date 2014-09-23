@@ -16,6 +16,7 @@ struct opts {
 	short read;
 	short threaded;
 	long bsize;
+   short random;
 };
 /*
 double getTime_usec() {
@@ -74,6 +75,7 @@ double bench_write(struct opts * op) {
 	free(data);
 	return (end - start) / 1000;
 }
+
 double bench_read(struct opts * op) {
 	double start, end;
 	FILE * input;
@@ -97,11 +99,23 @@ double bench_read(struct opts * op) {
            rc +=fread(data, (size_t) op->bsize, BENCH/op->bsize, input);
            end=getTime_usec();
         }
-        else{
+        else if (op->random){
+           int k;
+           int fd = fileno(input);
+           int nblocks = BENCH/op->bsize;
+           start = getTime_usec();
+           for (k = 0; k < nblocks; k++) {
+              fseek(input, op->bsize * (k % 2 == 0 ? k : nblocks - k), SEEK_SET);
+              rc = read(fd, data, op->bsize);
+           }
+           end = getTime_usec();
+        }
+        else {
            start = getTime_usec();
            rc = fread(data, (size_t) op->bsize, BENCH/op->bsize, input);
            end = getTime_usec();
         }
+
 	if (!rc){
 		fprintf(stderr, "Read failure\n");
 		exit(1);
@@ -111,6 +125,8 @@ double bench_read(struct opts * op) {
 	free(data);
 	return (end - start)/1000;
 }
+
+
 	
 int main(int argc, char** argv){
 	printf("testing disk performance\n");
@@ -119,6 +135,7 @@ int main(int argc, char** argv){
 	options->read = 0;
 	options->threaded = 0;
 	options->bsize = 1;
+   options->random = 0;
 	long s;
 	for (i =1; i < argc; i++){
 		if (argv[i][0] == '-'){
@@ -141,15 +158,17 @@ int main(int argc, char** argv){
 					options->read |= 1;
 					if (argv[i][2] == 't')
 						options->threaded |= 1;
+               else if (argv[i][2] == 'r')
+						options->random |= 1;
 					break;
 				case 't':
 					options->threaded |= 1;
 					if(argv[i][2] == 'r')
 						options->read |= 1;
-					break;
-                                case 'h':
-                                        fprintf(stdout, "%s\n", usage);
-                                        exit(0);
+               break;
+            case 'h':
+               fprintf(stdout, "%s\n", usage);
+               exit(0);
 				default:
 					fprintf(stderr, "unrecognized option\n%s\n", usage);
 					exit(1);

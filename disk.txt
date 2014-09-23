@@ -3,6 +3,7 @@ Usage: ./diskbench -[rt] -b[K,M,G]
 Performs disk I/O benchmark to determine read/write speeds
 
 -r      Run read benchmark instead of write
+-rr     Read benchmark but with random reads instead
 -t      Run in threaded mode
 -b[KMG] Use a blocksize of K(ilobyte) M(egabyte) G(igabyte)
 
