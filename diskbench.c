@@ -193,11 +193,11 @@ int main(int argc, char** argv){
                       "Write",
                       1000*1024/time*ratio);
         }
-        printf("%s,%ld,%c,%c,%f\n",
+        printf("%s,%ld,%c,%c,%c,%f\n",
            NAME,
 		options->bsize,
 		options->read ? 'R' : 'W',
-		options->threaded ? 'Y' : 'N',
+		options->threaded ? 'Y' : 'N', options->random ? 'R': 'S',
                 options->threaded ? (1000/time*BENCH*2) : (1000/time*BENCH));
    return 0;
 }
